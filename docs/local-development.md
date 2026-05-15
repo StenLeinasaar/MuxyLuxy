@@ -21,15 +21,15 @@ For **phase 1**, the local surface area is small: a single API process and one P
 
 Until then, Compose keeps local dev **simple, fast, and easy to reason about**.
 
-## Why bind-mount `.ansible/` and `logs/` (and a named volume for Postgres)
+## Why bind-mount `./ansible/` and `./logs/` (and a named volume for Postgres)
 
-The API container uses **relative paths** for Ansible-related directories (`ANSIBLE_ROOT=.ansible`, and so on) with a working directory of `/app` in the image.
+The API container uses **relative paths** for Ansible-related directories (see `.env.example`: `ANSIBLE_ROOT=./ansible`, and so on) with a working directory of `/app` in the image.
 
-**Bind mounts for `.ansible/` and `logs/`**
+**Bind mounts for `./ansible/` and `./logs/`**
 
-- **Host visibility** — Generated playbooks, roles materialized under `.ansible/`, and log files under `logs/` appear directly under the **repository root** on your machine. You can open, diff, and delete them with normal editor and shell tools.
-- **Alignment with `.gitignore`** — We ignore volatile paths such as `.ansible/generated/` and `logs/` while keeping the layout predictable for everyone who runs Compose from the repo root.
-- **Same mental model as “run from project root”** — Compose bind-mounts `./.ansible` → `/app/.ansible` and `./logs` → `/app/logs`, so environment variables stay short and relative without hard-coding macOS or Linux absolute paths.
+- **Host visibility** — Playbooks, roles, material under `./ansible/`, and log files under `logs/` appear under the **repository root** on your machine. You can open, diff, and delete them with normal editor and shell tools.
+- **Alignment with `.gitignore`** — We ignore volatile paths such as `ansible/generated/` and `logs/` while keeping the layout predictable for everyone who runs Compose from the repo root.
+- **Same mental model as “run from project root”** — Compose bind-mounts `./ansible` → `/app/ansible` and `./logs` → `/app/logs`, so environment variables stay short and relative without hard-coding macOS or Linux absolute paths.
 
 **Named volume for Postgres data**
 
