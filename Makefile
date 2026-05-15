@@ -12,3 +12,14 @@ logs:
 
 ps:
 	docker compose ps
+
+smoke:
+	./scripts/smoke-test.sh
+
+wait-api:
+	./scripts/wait-for-api.sh
+
+wait-targets:
+	./scripts/wait-for-targets.sh
+
+wait: wait-api wait-targets

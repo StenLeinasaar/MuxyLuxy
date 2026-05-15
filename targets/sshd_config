@@ -1,0 +1,15 @@
+# Minimal sshd settings for local/dev target containers
+Port 22
+ListenAddress 0.0.0.0
+
+PermitRootLogin no
+PasswordAuthentication yes
+PubkeyAuthentication yes
+KbdInteractiveAuthentication no
+
+# Avoid PAM edge cases in slim container images
+UsePAM no
+
+AllowUsers ansible
+
+Subsystem sftp /usr/lib/openssh/sftp-server

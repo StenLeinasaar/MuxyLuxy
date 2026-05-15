@@ -6,7 +6,7 @@ Placeholder. Record intentional decisions, rejected alternatives, and constraint
 
 | Date | Decision | Rationale | Alternatives considered |
 |------|----------|-----------|---------------------------|
-| _TBD_ | | | |
+| 2026-05-15 | Local dev via Docker Compose; bind mounts for `./ansible/` and `./logs/`, named volume for Postgres | Low ceremony for a two-service stack; host-visible generated assets; DB data managed by Docker | Kubernetes / Kind for local parity; bind-mounting Postgres data into the repo |
 
 ## Open questions
 

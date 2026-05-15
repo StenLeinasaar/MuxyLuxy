@@ -7,5 +7,5 @@ __pycache__/
 .venv/
 postgres-data/
 ansible/generated/*
-!ansible/generated/.gitkeep
+logs/
 *.log
