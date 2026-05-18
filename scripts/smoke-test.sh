@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-curl -fsS http://localhost:8000/healthz | grep -q "ok"
-echo "API health check passed"
+curl -fsS http://localhost:8000/healthz | python3 -c "
+import json, sys
+
+data = json.load(sys.stdin)
+assert data.get('status') == 'ok', data
+assert data.get('database') == 'ok', data
+print('API health check passed (status + database)')
+"
 
 python3 - <<'PY'
 import socket

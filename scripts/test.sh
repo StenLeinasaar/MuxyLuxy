@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "${SCRIPT_DIR}/smoke-test.sh"
+./scripts/lint.sh
+./scripts/wait-for-api.sh
+./scripts/wait-for-targets.sh
+docker compose exec api pytest
+./scripts/smoke-test.sh

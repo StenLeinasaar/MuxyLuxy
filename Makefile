@@ -1,3 +1,5 @@
+.PHONY: up down reset logs ps lint smoke wait-api wait-targets wait test
+
 up:
 	docker compose up --build
 
@@ -13,6 +15,9 @@ logs:
 ps:
 	docker compose ps
 
+lint:
+	./scripts/lint.sh
+
 smoke:
 	./scripts/smoke-test.sh
 
@@ -23,3 +28,6 @@ wait-targets:
 	./scripts/wait-for-targets.sh
 
 wait: wait-api wait-targets
+
+test:
+	./scripts/test.sh
