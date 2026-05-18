@@ -1,58 +1,99 @@
 # Architecture
 
-Phase 1 is a **local Docker Compose stack**: one API, one database, and two disposable **SSH targets** used to exercise Ansible-style workflows later.
+MuxyLuxy ships as a **local Docker Compose stack**: a **FastAPI** API, **Postgres**, optional **Prometheus**, and two **SSH targets** used to exercise Ansible runs. The same app code runs under **`service/`** and is packaged in the **`api`** image.
 
-## Runtime components
+## Service layout (`service/`)
 
-| Service   | Role | Notes |
-|-----------|------|--------|
-| `postgres` | Primary datastore | Postgres 16; Compose **healthcheck** gates `api` startup. |
-| `api` | HTTP control plane | FastAPI + Uvicorn on **8000**; bind-mounts `./ansible` and `./logs` into `/app`. |
-| `prometheus` | Metrics TSDB + UI | **Prometheus 2.55** scrapes `http://api:8000/metrics` (see `prometheus/prometheus.yml`). Published on host **9090** (`PROMETHEUS_PORT` overrides). TSDB uses named volume `prometheus_data`. |
-| `target1`, `target2` | SSH endpoints | Same image; **sshd** on 22 inside the container, published as **2221** and **2222** on the host so both can run at once. |
+| Area | Responsibility |
+|------|----------------|
+| `app/main.py` | FastAPI app, lifespan (admin seed), `/healthz`, router includes |
+| `app/config.py` | `pydantic-settings` — DB URL, JWT, Ansible paths, log dir, run timeout |
+| `app/database.py`, `app/models.py` | SQLAlchemy session and ORM models (`User`, `Target`, `Role`, `Run`) |
+| `app/auth.py` | Password hashing, JWT create/decode, OAuth2 bearer dependency, admin seed |
+| `app/api/login.py` | `POST /login` |
+| `app/api/targets.py` | CRUD-style `PUT`/`GET`/`DELETE` for targets |
+| `app/api/roles.py` | Role registry: list, upsert with path validation, soft delete |
+| `app/api/runs.py` | `POST /run` — validates target/role, persists run, schedules background worker |
+| `app/api/logs.py` | `GET /status`, `GET /logs` |
+| `app/ansible/` | Inventory/playbook generation, path validation, **`ansible-playbook` subprocess** |
+| `app/metrics/prometheus.py` | `/metrics` + request counter middleware |
+| `alembic/` | Schema migrations |
+| `tests/` | `pytest` + `TestClient` API tests |
 
-## `targets/` image
+## Container architecture (Compose)
 
-Purpose: a **minimal Linux SSH server** that looks like a typical Ansible-managed host.
+| Service | Role | Notes |
+|---------|------|--------|
+| `postgres` | Primary datastore | Postgres **16**; **healthcheck** gates `api` startup. Named volume `postgres_data`. Published **5432** on the host. |
+| `api` | HTTP control plane | Image built from `service/Dockerfile`. Uvicorn on **8000**. Env fixes Ansible paths to **`/opt/ansible`** (roles, generated) and logs to **`/app/logs`**. Bind mounts: `./ansible` → `/opt/ansible`, `./logs` → `/app/logs`, `./ssh` → `/opt/roller/ssh_keys` (read-only). **Entrypoint** copies the private key to `/opt/roller/ssh/id_rsa` with mode **600** so OpenSSH accepts it. |
+| `prometheus` | Metrics TSDB + UI | Scrapes `http://api:8000/metrics`. Host port **9090** (override with `PROMETHEUS_PORT`). Volume `prometheus_data`. |
+| `target1`, `target2` | SSH endpoints | Same image from `targets/`; **sshd** on port **22** inside the container, published as **2221** and **2222** on the host. Mount `./ssh` for authorized-keys style lab access. |
 
-- **Base:** Debian Bookworm slim — straightforward `apt` packages and glibc, close to many servers.
-- **Packages:** `openssh-server`, `python3`, `sudo` — SSH access, remote Python if playbooks need it, privilege escalation tests without extra images.
-- **User:** `ansible` with **passwordless sudo** (`/etc/sudoers.d/ansible`) so local playbooks can validate become/become_user flows without interactive sudo.
-- **Config:** `targets/sshd_config` is copied into the image so behavior is explicit and reviewable (not only distro defaults).
-- **Entrypoint:** Generates host keys if missing, runs **sshd in foreground** (`-D`) so the container lifecycle matches the SSH process.
+### `targets/` image
 
-## Data and repo boundaries
+Minimal **Debian Bookworm** SSH server: `openssh-server`, `python3`, `sudo`; user **`ansible`** with passwordless sudo for `become` tests. See `targets/sshd_config` and the Dockerfile for the exact lab configuration.
 
-- **Postgres data:** named volume (engine-managed; not in the Git tree).
-- **Ansible tree + logs on host:** bind mounts keep generated content and logs under the repo for inspection; see `docs/local-development.md`.
+### Repo vs engine data
 
-## Network shape (local)
+- **Postgres** and **Prometheus** time series live in **named volumes** (not committed).
+- **Ansible tree, logs, and SSH keys** live under the repo on the host and are **bind-mounted** so you can inspect generated playbooks and run logs without `docker exec`.
 
-Traffic is **flat Compose networking** between services. From the **host**, smoke checks use **localhost** to the published API and SSH ports only—no assumption that the host can resolve Docker service DNS names.
+## Run lifecycle
 
-## Observability (Prometheus)
+1. **Client** calls `POST /run` with `target_name` and `role_name`.
+2. **API** loads `Target` and `Role` from Postgres; returns **404** if missing, **400** if the role is disabled (`enabled: false`).
+3. A **`Run`** row is inserted with status **`queued`**, then **`BackgroundTasks`** invokes **`execute_run_background(run.id)`** after the response is sent.
+4. The worker sets status **`in_progress`**, writes **`log_path`**, generates inventory + playbook under **`ANSIBLE_GENERATED_PATH`**, and runs **`ansible-playbook`** with stdout/stderr appended to the log file. Timeout is governed by **`ANSIBLE_RUN_TIMEOUT_SECONDS`**.
+5. On completion, status becomes **`successful`** or **`failed`**; **`exit_code`**, **`finished_at`**, and optional **`error_message`** are persisted. Prometheus counters/histograms update on terminal states.
 
-The API exposes **`GET /metrics`** (no auth) in Prometheus text exposition format via `prometheus-client`.
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant API as FastAPI
+  participant DB as Postgres
+  participant W as Background worker
+  participant A as ansible-playbook
+  participant T as SSH target
+
+  C->>API: POST /run
+  API->>DB: insert Run (queued)
+  API-->>C: 200 run_id
+  API->>W: BackgroundTasks
+  W->>DB: in_progress, log_path
+  W->>W: generate inventory/playbook
+  W->>A: subprocess
+  A->>T: SSH
+  A-->>W: exit code
+  W->>DB: successful / failed
+```
+
+## Data flow
+
+| Flow | Path |
+|------|------|
+| **Authentication** | `POST /login` verifies password hash → issues **JWT** (`sub` = username). Protected routes use **`Authorization: Bearer`** and load `User` from the DB. |
+| **Target / role configuration** | JSON bodies → validated by Pydantic → persisted in **Postgres**. Role **filesystem paths** are resolved and checked to sit under **`ANSIBLE_ROLES_PATH`** and include **`tasks/main.yml`**. |
+| **Run orchestration** | `POST /run` → new **`runs`** row → worker reads **`targets`** + **`roles`** → writes **`ansible/generated/<run_id>/`** → **`ansible-playbook`** → **`logs/<run_id>.log`** (path stored on the run). |
+| **Observability** | In-process **`prometheus_client`** exposes **`GET /metrics`**. The **`prometheus`** container scrapes that endpoint and retains time series. |
+
+### Why both in-app metrics and a Prometheus container?
+
+They answer different questions and are not interchangeable:
+
+1. **`service/app/metrics/`** — lives **inside the API process**: defines metric families, increments them when runs and HTTP requests occur, and serves the current snapshot at **`GET /metrics`**.
+2. **`prometheus/` + Compose `prometheus` service** — a separate **scraper + TSDB**: pulls `/metrics` on an interval, stores history, and serves the **9090** UI and PromQL.
+
+You can curl **`/metrics`** without running Prometheus; you cannot get retention and alerting without a scraper or remote write sink.
+
+### Metrics exposed today
 
 | Metric | Type | Meaning |
 |--------|------|--------|
-| `ansible_roller_runs_total` | Counter | `status` label: `successful` or `failed`. Counts terminal background runs (including pre-flight failures such as missing target/role). |
-| `ansible_roller_active_runs` | Gauge | Runs currently inside the worker path after `in_progress` (ansible-playbook executing or file prep in the same block). |
-| `ansible_roller_run_duration_seconds` | Histogram | Wall time from `in_progress` commit through worker completion for that run. |
-| `ansible_roller_api_requests_total{method,path}` | Counter | Per-request HTTP counts (labels reflect the literal URL path). |
+| `ansible_roller_runs_total` | Counter | `status` label: `successful` or `failed`. Terminal background runs (including early failures such as missing target/role). |
+| `ansible_roller_active_runs` | Gauge | Runs in the worker path after `in_progress` is set. |
+| `ansible_roller_run_duration_seconds` | Histogram | Wall time from `in_progress` through worker completion. |
+| `ansible_roller_api_requests_total{method,path}` | Counter | Per-request HTTP counts (path is the literal URL path). |
 
-### Why both in-repo instrumentation and a Prometheus container?
+## Network shape (local)
 
-They answer different questions and **cannot be collapsed into one component**:
-
-1. **`service/app/metrics/` (and `prometheus-client` in the API)** — This is **inside the application process**. It defines the metric families, updates them when runs finish and when HTTP requests are handled, and serves the current values at **`GET /metrics`**. Prometheus text over HTTP is just an **export format**; something in the app must still implement counters, gauges, and histograms and expose that endpoint.
-
-2. **`prometheus/prometheus.yml` and the Compose `prometheus` service** — This is a **separate long-lived scraper and time-series database**. It periodically **pulls** `/metrics`, **stores** history, and gives you the **9090** UI, alerting integrations, and queries over past data. The API process does not (and should not) try to duplicate that storage and query engine.
-
-**Why not only the app?** You can run with **just the API**: `curl` or tests can read `/metrics`, but you get **no retention**, no multi-target scraping, and no Prometheus query model unless you add something else later.
-
-**Why not only Prometheus?** A Prometheus server **does not** run your Python code or observe your handlers. With no in-app instrumentation, `/metrics` would be empty or unrelated defaults—there would be **nothing meaningful to scrape**.
-
-So the usual split is: **instrument the app** (this repo: `app/metrics/prometheus.py`), **optionally run Prometheus** (this repo: `prometheus/` + Compose) to scrape and retain that stream.
-
-**Compose scraping** — With `docker compose up`, Prometheus scrapes the API on the default bridge network. On the host, open **http://localhost:9090** → **Status → Targets** to confirm `ansible-roller-api` is **UP**. You can still hit **`GET http://localhost:8000/metrics`** directly without running Prometheus.
+Compose provides a **flat bridge network**: the API resolves **`postgres`**, **`target1`**, and **`target2`** by service name. Smoke tests on the **host** use **localhost:8000** and **127.0.0.1:2221 / 2222** so they validate **published ports**, matching developer and lightweight CI workflows.
