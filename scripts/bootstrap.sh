@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Repo root (script may be invoked from anywhere)
+# Generate local SSH keys and required local directories/files for Docker Compose
+# (bind mounts, logs, generated Ansible output).
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-mkdir -p ssh
+mkdir -p ssh logs ansible/generated
 
 # Docker bind-mounting a missing path can create directories; ssh-keygen then fails.
 if [ -d ssh/id_rsa ]; then

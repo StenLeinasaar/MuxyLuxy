@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "No linting configured yet."
+docker compose exec api ruff check .
+docker compose exec api ruff format --check .

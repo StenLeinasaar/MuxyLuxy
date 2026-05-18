@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Seeding uses ROLLER_ROLES_ROOT (see scripts/seed-demo-data.sh). Defaults suit the
-# Dockerized API (/opt/ansible/roles). For a host-run API use: make e2e-local
+# Full role execution against a target via the API (queue runs, poll until success).
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
+
+# Seeding uses ROLLER_ROLES_ROOT (see scripts/seed-demo-data.sh). Defaults suit the
+# Dockerized API (/opt/ansible/roles). For a host-run API use: make e2e-local
 
 "$REPO_ROOT/scripts/bootstrap.sh"
 
@@ -15,8 +17,10 @@ _api_cid="$(docker compose ps -q api 2>/dev/null || true)"
 if [ -n "${_api_cid:-}" ]; then
   echo "Restarting api and targets so SSH key mounts pick up host files..." >&2
   docker compose restart api target1 target2
-  "$REPO_ROOT/scripts/wait-for-api.sh"
 fi
+
+"$REPO_ROOT/scripts/wait-for-api.sh"
+"$REPO_ROOT/scripts/wait-for-targets.sh"
 
 TOKEN="$(curl -fsS -X POST http://localhost:8000/login \
   -H 'Content-Type: application/json' \

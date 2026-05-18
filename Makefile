@@ -1,4 +1,4 @@
-.PHONY: up down reset logs ps lint smoke wait-api wait-targets wait test bootstrap check-ssh check-ansible e2e e2e-local
+.PHONY: up down reset logs ps lint format smoke wait-api wait-targets wait test bootstrap check-ssh check-ansible verify e2e e2e-local
 
 up: bootstrap
 	docker compose up --build
@@ -10,7 +10,7 @@ down:
 	docker compose down
 
 reset:
-	docker compose down -v --remove-orphans
+	./scripts/reset.sh
 
 logs:
 	docker compose logs -f
@@ -20,6 +20,9 @@ ps:
 
 lint:
 	./scripts/lint.sh
+
+format:
+	docker compose exec api ruff format .
 
 smoke:
 	./scripts/smoke-test.sh
@@ -34,6 +37,8 @@ wait: wait-api wait-targets
 
 test:
 	./scripts/test.sh
+
+verify: lint test smoke e2e
 
 check-ssh:
 	./scripts/check-ssh.sh
