@@ -25,10 +25,13 @@ app/api/logs.py
 app/api/roles.py
 app/api/runs.py
 app/api/targets.py
+app/metrics/__init__.py
+app/metrics/prometheus.py
 tests/test_auth.py
 tests/test_health.py
 tests/test_inventory.py
 tests/test_logs.py
+tests/test_metrics.py
 tests/test_playbook.py
 tests/test_roles.py
 tests/test_runs.py

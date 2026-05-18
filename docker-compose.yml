@@ -46,6 +46,20 @@ services:
       postgres:
         condition: service_healthy
 
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    depends_on:
+      - api
+
   target1:
     build:
       context: ./targets
@@ -66,3 +80,4 @@ services:
 
 volumes:
   postgres_data:
+  prometheus_data:

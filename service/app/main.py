@@ -13,6 +13,7 @@ from app.api.runs import router as runs_router
 from app.api.targets import router as targets_router
 from app.auth import get_current_user, seed_admin_user
 from app.database import SessionLocal, get_db
+from app.metrics.prometheus import configure_metrics
 from app.models import User
 
 
@@ -24,6 +25,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Ansible Roller", lifespan=lifespan)
+configure_metrics(app)
 app.include_router(login_router)
 app.include_router(roles_router)
 app.include_router(runs_router)

@@ -1,0 +1,14 @@
+# Local / dev Compose scrape config. The API exposes OpenMetrics at /metrics (no auth).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: ansible-roller-api
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets:
+          - api:8000
+        labels:
+          service: api

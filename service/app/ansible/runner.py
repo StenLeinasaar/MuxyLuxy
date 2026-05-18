@@ -1,11 +1,17 @@
 import os
 import subprocess
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 from app.ansible.playbook import generate_run_files
 from app.config import settings
 from app.database import SessionLocal
+from app.metrics.prometheus import (
+    ACTIVE_RUNS,
+    RUN_DURATION_SECONDS,
+    RUNS_TOTAL,
+)
 from app.models import Role, Run, Target
 
 STATUS_IN_PROGRESS = "in_progress"
@@ -32,6 +38,7 @@ def execute_run_background(run_pk: int) -> None:
             run.finished_at = datetime.now(UTC)
             run.error_message = "Target or role no longer exists"
             db.commit()
+            RUNS_TOTAL.labels(status="failed").inc()
             return
 
         run.status = STATUS_IN_PROGRESS
@@ -40,11 +47,15 @@ def execute_run_background(run_pk: int) -> None:
         run.log_path = str(log_path)
         db.commit()
 
+        ACTIVE_RUNS.inc()
+        run_started_monotonic = time.monotonic()
         try:
             generated_files = generate_run_files(target, role, run_id=run.run_id)
             env = os.environ.copy()
             env["ANSIBLE_ROLES_PATH"] = settings.ansible_roles_path
-            ansible_cfg = Path(settings.ansible_root).expanduser().resolve() / "ansible.cfg"
+            ansible_cfg = (
+                Path(settings.ansible_root).expanduser().resolve() / "ansible.cfg"
+            )
             if ansible_cfg.is_file():
                 env["ANSIBLE_CONFIG"] = str(ansible_cfg)
             env["ANSIBLE_HOST_KEY_CHECKING"] = "False"
@@ -83,5 +94,9 @@ def execute_run_background(run_pk: int) -> None:
             run.status = STATUS_FAILED
             run.error_message = str(exc)
         finally:
+            ACTIVE_RUNS.dec()
+            RUN_DURATION_SECONDS.observe(time.monotonic() - run_started_monotonic)
+            run_terminal = "successful" if run.status == STATUS_SUCCESSFUL else "failed"
+            RUNS_TOTAL.labels(status=run_terminal).inc()
             run.finished_at = datetime.now(UTC)
             db.commit()
