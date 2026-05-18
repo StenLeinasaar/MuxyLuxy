@@ -9,6 +9,11 @@ class Settings(BaseSettings):
     )
 
     database_url: str
+    jwt_secret: str = "change-me"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60
+    admin_username: str = "admin"
+    admin_password: str = "admin"
 
 
 settings = Settings()

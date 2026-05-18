@@ -10,6 +10,13 @@ assert data.get('database') == 'ok', data
 print('API health check passed (status + database)')
 "
 
+TOKEN="$(curl -fsS -X POST http://localhost:8000/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin"}' | jq -r .access_token)"
+
+test "$TOKEN" != "null"
+echo "Login passed"
+
 python3 - <<'PY'
 import socket
 
