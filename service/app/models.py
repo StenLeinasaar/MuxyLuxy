@@ -22,7 +22,7 @@ class Target(Base):
     __tablename__ = "targets"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(255))
+    name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     host: Mapped[str] = mapped_column(String(255))
     port: Mapped[int] = mapped_column(Integer)
     username: Mapped[str] = mapped_column(String(255))
