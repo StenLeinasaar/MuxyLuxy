@@ -1,7 +1,10 @@
-.PHONY: up down reset logs ps lint smoke wait-api wait-targets wait test
+.PHONY: up down reset logs ps lint smoke wait-api wait-targets wait test bootstrap check-ssh check-ansible
 
 up:
 	docker compose up --build
+
+bootstrap:
+	./scripts/bootstrap.sh
 
 down:
 	docker compose down
@@ -31,3 +34,9 @@ wait: wait-api wait-targets
 
 test:
 	./scripts/test.sh
+
+check-ssh:
+	./scripts/check-ssh.sh
+
+check-ansible:
+	./scripts/check-ansible-ping.sh

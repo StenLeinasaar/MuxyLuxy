@@ -32,10 +32,11 @@ services:
       ANSIBLE_ROOT: ${ANSIBLE_ROOT:-/opt/ansible}
       ANSIBLE_ROLES_PATH: ${ANSIBLE_ROLES_PATH:-/opt/ansible/roles}
       ANSIBLE_GENERATED_PATH: ${ANSIBLE_GENERATED_PATH:-/opt/ansible/generated}
-      ANSIBLE_LOG_PATH: ${ANSIBLE_LOG_PATH:-./logs}
+      ANSIBLE_LOG_PATH: ${ANSIBLE_LOG_PATH:-/app/logs/ansible.log}
     volumes:
       - ./ansible:/opt/ansible
       - ./logs:/app/logs
+      - ./ssh/id_rsa:/opt/roller/ssh/id_rsa:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,6 +47,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "2221:22"
+    volumes:
+      - ./ssh/id_rsa.pub:/opt/roller/ssh/id_rsa.pub:ro
 
   target2:
     build:
@@ -53,6 +56,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "2222:22"
+    volumes:
+      - ./ssh/id_rsa.pub:/opt/roller/ssh/id_rsa.pub:ro
 
 volumes:
   postgres_data:

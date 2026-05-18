@@ -9,3 +9,5 @@ postgres-data/
 ansible/generated/*
 logs/
 *.log
+ssh/id_rsa
+ssh/id_rsa.pub

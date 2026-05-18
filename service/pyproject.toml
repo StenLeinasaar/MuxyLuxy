@@ -14,6 +14,8 @@ dependencies = [
   "pydantic-settings",
   "python-jose[cryptography]",
   "alembic",
+  "ansible-core",
+  "ansible-runner",
   "pytest",
   "httpx",
   "ruff",
