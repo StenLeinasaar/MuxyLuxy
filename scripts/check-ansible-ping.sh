@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-docker compose exec -T api sh -c 'cat > /tmp/inventory.ini && ANSIBLE_LOG_PATH=/app/logs/ansible.log ansible all -i /tmp/inventory.ini -m ping' <<'INVENTORY'
+docker compose exec -T api sh -c 'cat > /tmp/inventory.ini && ansible all -i /tmp/inventory.ini -m ping' <<'INVENTORY'
 [targets]
 target1
 target2

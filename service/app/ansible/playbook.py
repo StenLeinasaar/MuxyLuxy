@@ -54,9 +54,10 @@ def generate_run_files(
     target: Target,
     role: Role,
     generated_root: str | Path | None = None,
+    run_id: str | None = None,
 ) -> GeneratedAnsibleFiles:
     root = Path(generated_root or settings.ansible_generated_path)
-    run_id = generate_run_id()
+    run_id = run_id or generate_run_id()
     run_directory = root / run_id
 
     inventory_content = build_inventory(target)

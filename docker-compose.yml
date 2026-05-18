@@ -29,10 +29,13 @@ services:
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
-      ANSIBLE_ROOT: ${ANSIBLE_ROOT:-/opt/ansible}
-      ANSIBLE_ROLES_PATH: ${ANSIBLE_ROLES_PATH:-/opt/ansible/roles}
-      ANSIBLE_GENERATED_PATH: ${ANSIBLE_GENERATED_PATH:-/opt/ansible/generated}
-      ANSIBLE_LOG_PATH: ${ANSIBLE_LOG_PATH:-/app/logs/ansible.log}
+      # In-container layout (matches ./ansible:/opt/ansible). Not taken from .env so
+      # host-local ./ansible/... values never override these inside the container.
+      ANSIBLE_ROOT: /opt/ansible
+      ANSIBLE_ROLES_PATH: /opt/ansible/roles
+      ANSIBLE_GENERATED_PATH: /opt/ansible/generated
+      ROLLER_RUN_LOG_DIR: /app/logs
+      ANSIBLE_RUN_TIMEOUT_SECONDS: ${ANSIBLE_RUN_TIMEOUT_SECONDS:-300}
     volumes:
       - ./ansible:/opt/ansible
       - ./logs:/app/logs

@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,7 +18,12 @@ class Settings(BaseSettings):
     ansible_root: str = "./ansible"
     ansible_roles_path: str = "./ansible/roles"
     ansible_generated_path: str = "./ansible/generated"
-    ansible_log_path: str = "./logs"
+    # Not ANSIBLE_LOG_PATH — that name is reserved by ansible-core for its own log file.
+    roller_run_log_dir: str = Field(
+        default="./logs",
+        validation_alias="ROLLER_RUN_LOG_DIR",
+    )
+    ansible_run_timeout_seconds: int = 300
 
 
 settings = Settings()

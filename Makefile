@@ -1,4 +1,4 @@
-.PHONY: up down reset logs ps lint smoke wait-api wait-targets wait test bootstrap check-ssh check-ansible
+.PHONY: up down reset logs ps lint smoke wait-api wait-targets wait test bootstrap check-ssh check-ansible e2e e2e-local
 
 up:
 	docker compose up --build
@@ -40,3 +40,10 @@ check-ssh:
 
 check-ansible:
 	./scripts/check-ansible-ping.sh
+
+e2e:
+	./scripts/e2e-run-role.sh
+
+# Hit a locally running API (uvicorn from repo root): role paths and SSH key must exist on the host.
+e2e-local:
+	ROLLER_ROLES_ROOT=$(CURDIR)/ansible/roles ROLLER_SSH_KEY_PATH=$(CURDIR)/ssh/id_rsa ./scripts/e2e-run-role.sh
