@@ -1,6 +1,6 @@
 .PHONY: up down reset logs ps lint smoke wait-api wait-targets wait test bootstrap check-ssh check-ansible e2e e2e-local
 
-up:
+up: bootstrap
 	docker compose up --build
 
 bootstrap:

@@ -21,13 +21,13 @@ fi
 put_role() {
   local name="$1" description="$2"
   local path="${ROLLER_ROLES_ROOT%/}/${name}"
-  curl -fsS -X PUT "http://localhost:8000/roles/${name}" \
+  curl -fsS -w '\n' -X PUT "http://localhost:8000/roles/${name}" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
     -d "$(jq -n --arg path "$path" --arg desc "$description" '{path: $path, description: $desc}')"
 }
 
-curl -fsS -X PUT http://localhost:8000/targets/target1 \
+curl -fsS -w '\n' -X PUT http://localhost:8000/targets/target1 \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "$(jq -n \
@@ -43,7 +43,7 @@ curl -fsS -X PUT http://localhost:8000/targets/target1 \
       python_interpreter: "/usr/bin/python3"
     }')"
 
-curl -fsS -X PUT http://localhost:8000/targets/target2 \
+curl -fsS -w '\n' -X PUT http://localhost:8000/targets/target2 \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "$(jq -n \

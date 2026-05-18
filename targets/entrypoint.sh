@@ -5,8 +5,8 @@ mkdir -p /var/run/sshd
 ssh-keygen -A
 
 mkdir -p /home/ansible/.ssh
-if [ -f /opt/roller/ssh/id_rsa.pub ]; then
-  cp /opt/roller/ssh/id_rsa.pub /home/ansible/.ssh/authorized_keys
+if [ -f /opt/roller/ssh_keys/id_rsa.pub ]; then
+  cp /opt/roller/ssh_keys/id_rsa.pub /home/ansible/.ssh/authorized_keys
 fi
 chown -R ansible:ansible /home/ansible/.ssh
 chmod 700 /home/ansible/.ssh

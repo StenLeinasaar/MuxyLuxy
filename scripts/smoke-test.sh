@@ -17,6 +17,30 @@ TOKEN="$(curl -fsS -X POST http://localhost:8000/login \
 test "$TOKEN" != "null"
 echo "Login passed"
 
+curl -fsS http://localhost:8000/targets \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+assert isinstance(data, list), data
+print('List targets passed')
+"
+
+curl -fsS http://localhost:8000/roles \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+assert isinstance(data, list), data
+print('List roles passed')
+"
+
+curl -fsS "http://localhost:8000/status?limit=20" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+assert isinstance(data, list), data
+print('Status endpoint passed')
+"
+
 python3 - <<'PY'
 import socket
 

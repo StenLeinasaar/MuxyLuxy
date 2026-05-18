@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.login import router as login_router
+from app.api.logs import router as logs_router
 from app.api.roles import router as roles_router
 from app.api.runs import router as runs_router
 from app.api.targets import router as targets_router
@@ -26,6 +27,7 @@ app = FastAPI(title="Ansible Roller", lifespan=lifespan)
 app.include_router(login_router)
 app.include_router(roles_router)
 app.include_router(runs_router)
+app.include_router(logs_router)
 app.include_router(targets_router)
 
 

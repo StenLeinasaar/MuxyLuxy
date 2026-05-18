@@ -39,7 +39,9 @@ services:
     volumes:
       - ./ansible:/opt/ansible
       - ./logs:/app/logs
-      - ./ssh/id_rsa:/opt/roller/ssh/id_rsa:ro
+      # Mount the whole ./ssh dir so Docker never creates a stray file/dir at a missing single-file path.
+      # entrypoint copies the private key with chmod 600 (OpenSSH rejects loose perms on bind mounts).
+      - ./ssh:/opt/roller/ssh_keys:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -51,7 +53,7 @@ services:
     ports:
       - "2221:22"
     volumes:
-      - ./ssh/id_rsa.pub:/opt/roller/ssh/id_rsa.pub:ro
+      - ./ssh:/opt/roller/ssh_keys:ro
 
   target2:
     build:
@@ -60,7 +62,7 @@ services:
     ports:
       - "2222:22"
     volumes:
-      - ./ssh/id_rsa.pub:/opt/roller/ssh/id_rsa.pub:ro
+      - ./ssh:/opt/roller/ssh_keys:ro
 
 volumes:
   postgres_data:
