@@ -32,3 +32,27 @@ curl -fsS -X PUT http://localhost:8000/targets/target2 \
     "ssh_private_key_path": "/opt/roller/ssh/id_rsa",
     "python_interpreter": "/usr/bin/python3"
   }'
+
+curl -fsS -X PUT http://localhost:8000/roles/base \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "/opt/ansible/roles/base",
+    "description": "Base host setup"
+  }'
+
+curl -fsS -X PUT http://localhost:8000/roles/motd \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "/opt/ansible/roles/motd",
+    "description": "Manage message of the day"
+  }'
+
+curl -fsS -X PUT http://localhost:8000/roles/packages \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "/opt/ansible/roles/packages",
+    "description": "Install demo packages"
+  }'

@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60
     admin_username: str = "admin"
     admin_password: str = "admin"
+    ansible_root: str = "./ansible"
+    ansible_roles_path: str = "./ansible/roles"
+    ansible_generated_path: str = "./ansible/generated"
+    ansible_log_path: str = "./logs"
 
 
 settings = Settings()

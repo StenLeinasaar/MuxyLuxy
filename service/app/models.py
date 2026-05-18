@@ -44,7 +44,7 @@ class Role(Base):
     __tablename__ = "roles"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(255))
+    name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     path: Mapped[str] = mapped_column(String(1024))
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=sql_true())

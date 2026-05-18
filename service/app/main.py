@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.login import router as login_router
+from app.api.roles import router as roles_router
 from app.api.targets import router as targets_router
 from app.auth import get_current_user, seed_admin_user
 from app.database import SessionLocal, get_db
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Ansible Roller", lifespan=lifespan)
 app.include_router(login_router)
+app.include_router(roles_router)
 app.include_router(targets_router)
 
 

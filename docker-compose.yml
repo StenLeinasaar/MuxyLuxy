@@ -29,12 +29,12 @@ services:
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
-      ANSIBLE_ROOT: ${ANSIBLE_ROOT:-./ansible}
-      ANSIBLE_ROLES_PATH: ${ANSIBLE_ROLES_PATH:-./ansible/roles}
-      ANSIBLE_GENERATED_PATH: ${ANSIBLE_GENERATED_PATH:-./ansible/generated}
+      ANSIBLE_ROOT: ${ANSIBLE_ROOT:-/opt/ansible}
+      ANSIBLE_ROLES_PATH: ${ANSIBLE_ROLES_PATH:-/opt/ansible/roles}
+      ANSIBLE_GENERATED_PATH: ${ANSIBLE_GENERATED_PATH:-/opt/ansible/generated}
       ANSIBLE_LOG_PATH: ${ANSIBLE_LOG_PATH:-./logs}
     volumes:
-      - ./ansible:/app/ansible
+      - ./ansible:/opt/ansible
       - ./logs:/app/logs
     depends_on:
       postgres:

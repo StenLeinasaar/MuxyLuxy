@@ -1,0 +1,4 @@
+---
+- name: Confirm base role is reachable
+  ansible.builtin.debug:
+    msg: "Base role applied"

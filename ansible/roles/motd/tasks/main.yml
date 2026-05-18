@@ -1,0 +1,9 @@
+---
+- name: Install demo message of the day
+  ansible.builtin.copy:
+    dest: /etc/motd
+    content: |
+      Managed by MuxyLuxy
+    owner: root
+    group: root
+    mode: "0644"

@@ -1,0 +1,6 @@
+---
+- name: Install demo packages
+  ansible.builtin.package:
+    name: "{{ roller_packages | default([]) }}"
+    state: present
+  when: (roller_packages | default([])) | length > 0
